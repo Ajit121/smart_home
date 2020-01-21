@@ -7,6 +7,8 @@ import 'package:smart_home/data/Device.dart';
 import 'package:smart_home/theme/Colors.dart';
 import 'package:smart_home/theme/theme.dart';
 import 'package:vector_math/vector_math.dart' show radians;
+import 'dart:math' as math;
+
 
 class DevicePage extends StatelessWidget {
   final Device device;
@@ -275,6 +277,13 @@ class TempretureIndicator extends CustomPainter {
 
   TempretureIndicator({this.tempreture});
 
+  final linePainter = Paint()
+    ..color = lineColor
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
+  final double lineHeight = 8;
+  final int maxLines = 12;
+  final previousPoint = 0.0;
   @override
   void paint(Canvas canvas, Size size) {
     final circleWidth = 10.0;
@@ -284,44 +293,43 @@ class TempretureIndicator extends CustomPainter {
       ..strokeWidth = circleWidth
       ..color = Brighter
       ..style = PaintingStyle.stroke;
-    /* ..shader = SweepGradient(
-          colors: [Brighter, Brighter],
-          startAngle: 0.0,
-          endAngle: arcAngle).createShader(Rect.fromCircle(center: center,radius: radius));*/
 
     canvas.drawCircle(center, radius, indicatorPaint);
 
-    Paint linePaint = Paint()..style = PaintingStyle.stroke;
+    canvas.translate(size.width / 2, size.height / 2);
 
-    int p = 0;
-    final interval = 30;
-    do {
-      final progress = p / 100;
-      final lineAngle = 2 * pi * progress - (pi / 2);
+    canvas.save();
 
-      final rad = radians(p.toDouble());
+    final progressPercentage = tempreture/100;
 
-      print('line drawing $lineAngle  $progress $p');
+    final progress = tempreture / 100;
+    final thumbAngle = 2 * pi * progress - (pi / 2);
+    final thumbX = cos(thumbAngle) * radius;
+    final thumbY = sin(thumbAngle) * radius;
+    final thumbCenter = new Offset(thumbX, thumbY) + center;
 
-      linePaint.color = tempreture/100 < progress ? accentColor : Colors.white;
-      final dx = (cos(rad) * radius);
-      final dy = (sin(rad) * radius);
+   // final deg  = atan2(y2-y1, x2-x1);
+   // print('degree  $deg');
+   // print('progress $progressPercentage');
+    List.generate(maxLines, (i) {
 
-      final circleCenter = new Offset(dx, dy) + center;
+      final lineAngle =2 * pi * progress - (pi / 2);
 
-      final p1 = Offset(
-          circleCenter.dx + circleWidth / 2, circleCenter.dy + circleWidth / 2);
+      //print('calculationg $lineAngle  and $thumbAngle');
 
-      final dx2 = (cos(rad) * radius);
-      final dy2 = (sin(rad) * radius);
-      final circleCenter2 = new Offset(dx2, dy2) + center;
 
-      final p2 = Offset(circleCenter2.dx - circleWidth / 2,
-          circleCenter2.dy - circleWidth / 2);
-      canvas.drawLine(p1, p2, linePaint);
+      final a1 =  Offset(0, radius + 5);
+      final b1 =  Offset(0, radius - 5);
 
-      p += interval;
-    } while (p <= 360);
+      canvas.drawLine(
+         a1, b1, linePainter);
+      canvas.rotate(2 * pi / maxLines);
+
+
+    });
+
+    canvas.restore();
+
   }
 
   @override
