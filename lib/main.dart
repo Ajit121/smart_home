@@ -236,22 +236,23 @@ class _PlacesWidgetState extends State<PlacesWidget> {
         constraints: BoxConstraints(maxHeight: 70),
         child: ListView.builder(
           itemBuilder: (context, index) {
-            return Container(
-              margin: const EdgeInsets.all(10),
-              padding: const EdgeInsets.all(10),
-              decoration: _placeList[index].isTurnedOn
-                  ? widgetSelectedDecoration
-                  : widgetDecoration,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _placeList.forEach((place) {
-                      place.isTurnedOn = false;
-                    });
-                    _placeList[index].isTurnedOn =
-                        !_placeList[index].isTurnedOn;
+            return GestureDetector(
+              onTap: (){
+                setState(() {
+                  _placeList.forEach((place) {
+                    place.isTurnedOn = false;
                   });
-                },
+                  _placeList[index].isTurnedOn =
+                  !_placeList[index].isTurnedOn;
+                });
+              },
+              child: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                margin: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
+                decoration: _placeList[index].isTurnedOn
+                    ? widgetSelectedDecoration
+                    : widgetDecoration,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[

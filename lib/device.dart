@@ -9,6 +9,7 @@ import 'package:smart_home/theme/theme.dart';
 import 'package:vector_math/vector_math.dart' show radians;
 import 'dart:math' as math;
 
+import 'RadialDragGestureDetector.dart';
 
 class DevicePage extends StatelessWidget {
   final Device device;
@@ -130,6 +131,13 @@ class ControllerWidget extends StatefulWidget {
 
 class _ControllerWidgetState extends State<ControllerWidget> {
   double _progress = 25;
+  double _blurRadius = 4;
+  double _spreadRadius = 1;
+  double _offset = 4;
+
+  PolarCoord _startDragCoord;
+  double _startDragPercent;
+  double _currentDragPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -142,31 +150,64 @@ class _ControllerWidgetState extends State<ControllerWidget> {
               tag: '${widget.device.deviceName}tempreture',
               child: Material(
                 color: backgroundColor,
-                child: TempratureDial(
-                  tempreture: _progress,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                          color: Darker,
+                          offset: Offset(_offset, _offset),
+                          blurRadius: _blurRadius,
+                          spreadRadius: _spreadRadius),
+                      BoxShadow(
+                          color: backgroundColor,
+                          offset: Offset(-_offset, -_offset),
+                          blurRadius: _blurRadius,
+                          spreadRadius: _spreadRadius),
+                    ],
+                  ),
+                  child: TempretureDial(
+                    onTempretureUpdateStart: (coord) {
+                      _startDragCoord = coord;
+                      _startDragPercent = _progress;
+                    },
+                    onTempretureUpdate: (coord) {
+                      final dragAngle = coord.angle - _startDragCoord.angle;
+                      final dragPercent = dragAngle / (2 * pi);
+                      print(
+                          'current Drag ${(_startDragPercent + dragPercent) % 1.0}');
+                      setState(() {
+                        _currentDragPercent =
+                            (_startDragPercent + dragPercent) % 1.0;
+                        _progress = _currentDragPercent * 100;
+                      });
+                    },
+                    onTempretureUpdateEnd: () {
+                      setState(() {
+                        //_progress = _currentDragPercent * 100;
+
+                        _currentDragPercent = null;
+                        _startDragCoord = null;
+                        _startDragPercent = 0.0;
+                      });
+                    },
+                    tempreture: _progress,
+                  ),
                 ),
               ),
             ),
             SizedBox(
               height: 40,
             ),
+            SizedBox(
+              height: 40,
+            ),
             Hero(
               tag: '${widget.device.deviceName}slider',
-              child: Material(
-                color: backgroundColor,
-                child: Slider(
-                  value: _progress,
-                  onChanged: (progress) {
-                    setState(() {
-                      _progress = progress;
-                    });
-                  },
-                  activeColor: Colors.deepOrange,
-                  inactiveColor: Colors.deepOrangeAccent,
-                  min: 0,
-                  max: 100,
-                ),
-              ),
+              child: Container(
+                  decoration: widgetDecoration,
+                  child: TempretureSlider(tempreture: _progress)),
             ),
           ],
         ),
@@ -175,41 +216,56 @@ class _ControllerWidgetState extends State<ControllerWidget> {
   }
 }
 
-class TempratureDial extends StatelessWidget {
+class TempretureDial extends StatelessWidget {
   double tempreture;
 
-  TempratureDial({this.tempreture});
+  Function(PolarCoord coord) onTempretureUpdate;
+  Function(PolarCoord coord) onTempretureUpdateStart;
+  Function() onTempretureUpdateEnd;
+
+  TempretureDial(
+      {this.tempreture,
+      this.onTempretureUpdateStart,
+      this.onTempretureUpdate,
+      this.onTempretureUpdateEnd});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      foregroundPainter: TempretureIndicator(tempreture: tempreture),
+    return RadialDragGestureDetector(
+      onRadialDragUpdate: onTempretureUpdate,
+      onRadialDragStart: onTempretureUpdateStart,
+      onRadialDragEnd: onTempretureUpdateEnd,
       child: Container(
-        decoration: tempretureDialDecoration(),
-        child: Container(
-          margin: const EdgeInsets.all(14),
-          padding: const EdgeInsets.all(5),
-          decoration: tempretureDialDecoration(),
-          child: CustomPaint(
-            foregroundPainter: TempretureProgressBar(
-              tempreture: tempreture,
-            ),
+        child: CustomPaint(
+          foregroundPainter: TempretureIndicator(tempreture: tempreture),
+          child: Container(
+            decoration: tempretureDialDecoration(),
             child: Container(
-              margin: const EdgeInsets.all(28),
-              child: Column(
-                children: <Widget>[
-                  Text(
-                    '${tempreture.toInt()}\u00B0 C',
-                    style: TextStyle(fontSize: 28, color: accentColor),
+              margin: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(5),
+              decoration: tempretureDialDecoration(),
+              child: CustomPaint(
+                foregroundPainter: TempretureProgressBar(
+                  tempreture: tempreture,
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(28),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        '${tempreture.toInt()}\u00B0 C',
+                        style: TextStyle(fontSize: 28, color: accentColor),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Cool mood',
+                        style: TextStyle(fontSize: 14, color: accentColor),
+                      )
+                    ],
                   ),
-                  SizedBox(
-                    height: 10,
-                  ),
-                  Text(
-                    'Cool mood',
-                    style: TextStyle(fontSize: 14, color: accentColor),
-                  )
-                ],
+                ),
               ),
             ),
           ),
@@ -284,9 +340,10 @@ class TempretureIndicator extends CustomPainter {
   final double lineHeight = 8;
   final int maxLines = 12;
   final previousPoint = 0.0;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final circleWidth = 10.0;
+    final circleWidth = 12.0;
     Offset center = Offset(size.width / 2, size.height / 2);
     double radius = min(size.width / 2, size.height / 2);
     Paint indicatorPaint = Paint()
@@ -300,7 +357,7 @@ class TempretureIndicator extends CustomPainter {
 
     canvas.save();
 
-    final progressPercentage = tempreture/100;
+    final progressPercentage = tempreture / 100;
 
     final progress = tempreture / 100;
     final thumbAngle = 2 * pi * progress - (pi / 2);
@@ -308,28 +365,22 @@ class TempretureIndicator extends CustomPainter {
     final thumbY = sin(thumbAngle) * radius;
     final thumbCenter = new Offset(thumbX, thumbY) + center;
 
-   // final deg  = atan2(y2-y1, x2-x1);
-   // print('degree  $deg');
-   // print('progress $progressPercentage');
+    // final deg  = atan2(y2-y1, x2-x1);
+    // print('degree  $deg');
+    // print('progress $progressPercentage');
     List.generate(maxLines, (i) {
-
-      final lineAngle =2 * pi * progress - (pi / 2);
+      final lineAngle = 2 * pi * progress - (pi / 2);
 
       //print('calculationg $lineAngle  and $thumbAngle');
 
+      final a1 = Offset(0, radius + 5);
+      final b1 = Offset(0, radius - 5);
 
-      final a1 =  Offset(0, radius + 5);
-      final b1 =  Offset(0, radius - 5);
-
-      canvas.drawLine(
-         a1, b1, linePainter);
+      canvas.drawLine(a1, b1, linePainter);
       canvas.rotate(2 * pi / maxLines);
-
-
     });
 
     canvas.restore();
-
   }
 
   @override
@@ -357,3 +408,116 @@ BoxDecoration tempretureDialDecoration() => BoxDecoration(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [LightBrighter, backgroundColor]));
+
+class TempretureSlider extends StatelessWidget {
+  final tempreture;
+
+  const TempretureSlider({Key key, this.tempreture}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(10),
+      decoration: widgetDecoration,
+      child: Stack(
+        children: <Widget>[
+          CustomPaint(
+            foregroundPainter: SliderBackgroundPainter(),
+            child: Container(
+              width: double.infinity,
+            ),
+          ),
+          CustomPaint(
+            foregroundPainter: SliderPainter(tempreture: tempreture),
+            child: Container(
+              width: double.infinity,
+            ),
+          ),
+          CustomPaint(
+            foregroundPainter: SliderHeaderPainter(tempreture: tempreture),
+            child: Container(
+              width: double.infinity,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SliderBackgroundPainter extends CustomPainter {
+  final sliderPaint = Paint()
+    ..color = backgroundColor
+    ..style = PaintingStyle.fill
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = 26;
+
+  final sliderHolePaint = Paint()
+    ..color = LightBrighter
+    ..style = PaintingStyle.fill
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = 10;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final startOffset = Offset(0, 0);
+    //   final progress = (size.width / 100) * tempreture;
+    final endOffset = Offset(size.width, 0);
+    canvas.drawLine(startOffset, endOffset, sliderPaint);
+    canvas.drawLine(startOffset, endOffset, sliderHolePaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
+
+class SliderPainter extends CustomPainter {
+  final tempreture;
+
+  final sliderPaint = Paint()
+    ..color = accentColor
+    ..style = PaintingStyle.fill
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = 10;
+
+  SliderPainter({this.tempreture});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final startOffset = Offset(0, 0);
+    final progress = (size.width / 100) * tempreture;
+    final endOffset = Offset(progress, 0);
+    canvas.drawLine(startOffset, endOffset, sliderPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
+
+class SliderHeaderPainter extends CustomPainter {
+  final tempreture;
+
+  final _progressHeaderCirclePaint = Paint()
+    ..strokeWidth = 8
+    ..color = accentColor
+    ..style = PaintingStyle.fill;
+
+  final _progressHeaderHolePaint = Paint()
+    ..strokeWidth = 4
+    ..color = backgroundColor
+    ..style = PaintingStyle.fill;
+
+  SliderHeaderPainter({this.tempreture});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final progress = (size.width / 100) * tempreture;
+    final endOffset = Offset(progress, 0);
+    //final radius = min(4)
+    canvas.drawCircle(endOffset, 12, _progressHeaderCirclePaint);
+    canvas.drawCircle(endOffset, 6, _progressHeaderHolePaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => true;
+}
