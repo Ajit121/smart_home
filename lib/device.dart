@@ -1,11 +1,14 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:smart_home/data/Device.dart';
 import 'package:smart_home/theme/Colors.dart';
 import 'package:smart_home/theme/theme.dart';
+import 'package:smart_home/utils.dart';
 import 'package:vector_math/vector_math.dart' show radians;
 import 'dart:math' as math;
 
@@ -57,6 +60,8 @@ class HeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    print('HeaderWidget width $width');
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -130,31 +135,13 @@ class _ControllerWidgetState extends State<ControllerWidget> {
   double _blurRadius = 4;
   double _spreadRadius = 1;
   double _offset = 4;
-  double _currentDragPercent;
-  double _currentTempreture = 0;
+  int _currentTempreture = 0;
 
-  //bool isDragging = false;
- // PolarCoord lastDragCoord;
-
-  PolarCoord _startDragCoord;
-
-  void _onDragStart(PolarCoord coord) {
-    _startDragCoord = coord;
-    _startDragPercent = _currentTempreture / 100;
-  }
-
-  void _onDragUpdate(PolarCoord coord) {
-    final dragAngle = coord.angle - _startDragCoord.angle;
-    final dragPercent = dragAngle / (2 * pi);
-
+  void onTempretureUpdate(int tempreture) {
     setState(() {
-      _currentDragPercent = (_startDragPercent + dragPercent) % 1.0;
-      _currentTempreture = _currentDragPercent * 100;
-
+      _currentTempreture = tempreture;
     });
   }
-
-  void _onDragEnd() {}
 
   @override
   Widget build(BuildContext context) {
@@ -186,9 +173,7 @@ class _ControllerWidgetState extends State<ControllerWidget> {
                   ),
                   child: TempretureDial(
                     tempreture: _currentTempreture.toInt(),
-                    onTempretureUpdateStart: _onDragStart,
-                    onTempretureUpdate: _onDragUpdate,
-                    onTempretureUpdateEnd: _onDragEnd,
+                    onTempretureUpdate: onTempretureUpdate,
                   ),
                 ),
               ),
@@ -202,8 +187,14 @@ class _ControllerWidgetState extends State<ControllerWidget> {
             Hero(
               tag: '${widget.device.deviceName}slider',
               child: Container(
-                  decoration: widgetDecoration,
-                  child: TempretureSlider(tempreture: _currentTempreture)),
+                child: Stack(
+                  children: <Widget>[
+                    TempretureSlider(
+                        tempreture: _currentTempreture,
+                        onTempretureUpdate: onTempretureUpdate),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -212,28 +203,46 @@ class _ControllerWidgetState extends State<ControllerWidget> {
   }
 }
 
-class TempretureDial extends StatelessWidget {
+class TempretureDial extends StatefulWidget {
   int tempreture;
 
-  Function(PolarCoord coord) onTempretureUpdate;
-  Function(PolarCoord coord) onTempretureUpdateStart;
-  Function() onTempretureUpdateEnd;
+  Function(int tempreture) onTempretureUpdate;
 
-  TempretureDial(
-      {this.tempreture,
-      this.onTempretureUpdateStart,
-      this.onTempretureUpdate,
-      this.onTempretureUpdateEnd});
+  TempretureDial({this.tempreture, this.onTempretureUpdate});
+
+  @override
+  _TempretureDialState createState() => _TempretureDialState();
+}
+
+class _TempretureDialState extends State<TempretureDial> {
+  double _startDragPercent = 0;
+
+  double _currentDragPercent;
+
+  double _currentTempreture = 0;
+
+  PolarCoord _startDragCoord;
 
   @override
   Widget build(BuildContext context) {
     return RadialDragGestureDetector(
-      onRadialDragUpdate: onTempretureUpdate,
-      onRadialDragStart: onTempretureUpdateStart,
-      onRadialDragEnd: onTempretureUpdateEnd,
+      onRadialDragUpdate: (PolarCoord coord) {
+        final dragAngle = coord.angle - _startDragCoord.angle;
+        final dragPercent = dragAngle / (2 * pi);
+
+        setState(() {
+          _currentDragPercent = (_startDragPercent + dragPercent) % 1.0;
+          _currentTempreture = _currentDragPercent * 101;
+        });
+        widget.onTempretureUpdate(_currentTempreture.toInt());
+      },
+      onRadialDragStart: (PolarCoord coord) {
+        _startDragCoord = coord;
+        _startDragPercent = _currentTempreture / 101;
+      },
       child: Container(
         child: CustomPaint(
-          foregroundPainter: TempretureIndicator(tempreture: tempreture),
+          foregroundPainter: TempretureIndicator(tempreture: widget.tempreture),
           child: Container(
             decoration: tempretureDialDecoration(),
             child: Container(
@@ -242,21 +251,29 @@ class TempretureDial extends StatelessWidget {
               decoration: tempretureDialDecoration(),
               child: CustomPaint(
                 foregroundPainter:
-                    TempretureProgressBar(tempreture: tempreture),
+                    TempretureProgressBar(tempreture: widget.tempreture),
                 child: Container(
                   margin: const EdgeInsets.all(28),
-                  child: Column(
+                  child: ListView(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
                     children: <Widget>[
-                      Text(
-                        '${tempreture.toInt()}\u00B0 C',
-                        style: TextStyle(fontSize: 28, color: accentColor),
+                      Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${widget.tempreture.toInt()}\u00B0 C',
+                          style: TextStyle(fontSize: 28, color: accentColor),
+                        ),
                       ),
                       SizedBox(
                         height: 10,
                       ),
-                      Text(
-                        'Cool mood',
-                        style: TextStyle(fontSize: 14, color: accentColor),
+                      Align(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Cool mood',
+                          style: TextStyle(fontSize: 14, color: accentColor),
+                        ),
                       )
                     ],
                   ),
@@ -341,6 +358,7 @@ class TempretureIndicator extends CustomPainter {
     final circleWidth = 12.0;
     Offset center = Offset(size.width / 2, size.height / 2);
     double radius = min(size.width / 2, size.height / 2);
+
     Paint indicatorPaint = Paint()
       ..strokeWidth = circleWidth
       ..color = Brighter
@@ -352,27 +370,16 @@ class TempretureIndicator extends CustomPainter {
 
     canvas.save();
 
-    final progressPercentage = tempreture / 100;
-
-    final progress = tempreture / 100;
-    final thumbAngle = 2 * pi * progress - (pi / 2);
-    final thumbX = cos(thumbAngle) * radius;
-    final thumbY = sin(thumbAngle) * radius;
-    final thumbCenter = new Offset(thumbX, thumbY) + center;
-
-    // final deg  = atan2(y2-y1, x2-x1);
-    // print('degree  $deg');
-    // print('progress $progressPercentage');
     List.generate(maxLines, (i) {
-      final lineAngle = 2 * pi * progress - (pi / 2);
-
-      //print('calculationg $lineAngle  and $thumbAngle');
-
       final a1 = Offset(0, radius + 5);
       final b1 = Offset(0, radius - 5);
 
+      final rotationAngle = 2 * pi / maxLines;
+
+
       canvas.drawLine(a1, b1, linePainter);
-      canvas.rotate(2 * pi / maxLines);
+
+      canvas.rotate(rotationAngle);
     });
 
     canvas.restore();
@@ -404,63 +411,91 @@ BoxDecoration tempretureDialDecoration() => BoxDecoration(
         end: Alignment.bottomRight,
         colors: [LightBrighter, backgroundColor]));
 
-class TempretureSlider extends StatelessWidget {
+class TempretureSlider extends StatefulWidget {
   final tempreture;
+  final Function(int tempreture) onTempretureUpdate;
 
-  const TempretureSlider({Key key, this.tempreture}) : super(key: key);
+  TempretureSlider({Key key, this.tempreture, this.onTempretureUpdate})
+      : super(key: key);
+
+  @override
+  _TempretureSliderState createState() => _TempretureSliderState();
+}
+
+class _TempretureSliderState extends State<TempretureSlider> {
+  double width;
+  double position = 0;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        print('header tapped');
-      },
-      onHorizontalDragUpdate: (DragUpdateDetails details) {
-        print('dragging 2${details.globalPosition}');
-      },
-      child: Container(
-        margin: const EdgeInsets.all(10),
-        decoration: widgetDecoration,
-        child: Stack(
-          children: <Widget>[
-            CustomPaint(
-              foregroundPainter: SliderBackgroundPainter(),
-              child: Container(
-                width: double.infinity,
-              ),
-            ),
-            CustomPaint(
-              foregroundPainter: SliderPainter(tempreture: tempreture),
-              child: Container(
-                width: double.infinity,
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                print('header tapped');
-              },
-              onHorizontalDragUpdate: (DragUpdateDetails details) {
-                print('dragging 2${details.globalPosition}');
-              },
-              child: CustomPaint(
-                foregroundPainter: SliderHeaderPainter(tempreture: tempreture),
-                child: GestureDetector(
-                  onTap: () {
-                    print('header tapped');
-                  },
-                  onHorizontalDragUpdate: (DragUpdateDetails details) {
-                    print('dragging 2${details.globalPosition}');
-                  },
+    return LayoutBuilder(builder: (context, constraints) {
+      width = constraints.maxWidth;
+      position = (constraints.maxWidth / 100) * widget.tempreture;
+      print('TempretureSlider width ${constraints.maxWidth}');
+      return Stack(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.all(10),
+            decoration: widgetDecoration,
+            child: Stack(
+              children: <Widget>[
+                CustomPaint(
+                  foregroundPainter: SliderBackgroundPainter(),
                   child: Container(
                     width: double.infinity,
                   ),
                 ),
-              ),
+                CustomPaint(
+                  foregroundPainter:
+                      SliderPainter(tempreture: widget.tempreture),
+                  child: Container(
+                    width: double.infinity,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+          Positioned.fill(
+              left: (position - (constraints.maxWidth / 2)) - 130,
+              child: GestureDetector(
+                onHorizontalDragUpdate: _onDrag,
+                child: Container(
+                  child: SvgPicture.asset(
+                    'assets/ac.svg',
+                    color: Colors.red,
+                    width: 0,
+                  ),
+                ),
+              )
+
+              /* CustomPaint(
+              foregroundPainter: SliderHeaderPainter(tempreture: widget.tempreture),
+              child: GestureDetector(
+                onHorizontalDragUpdate: _onDrag,
+                child: Container(
+                  child: SvgPicture.asset(
+                    'assets/ac.svg',
+                    color: Colors.red,
+                    width: double.infinity,
+                  ),
+                ),
+              ),
+            ),*/
+              ),
+        ],
+      );
+    });
+  }
+
+  _onDrag(DragUpdateDetails details) {
+    // position += details.delta.dx+1;
+    final localTouchOffset = (context.findRenderObject() as RenderBox)
+        .globalToLocal(details.globalPosition);
+    position = localTouchOffset.dx;
+    final progress = (position / width) * 100;
+    print('progress $progress');
+    widget.onTempretureUpdate(progress.toInt());
   }
 }
 
@@ -480,7 +515,6 @@ class SliderBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final startOffset = Offset(0, 0);
-    //   final progress = (size.width / 100) * tempreture;
     final endOffset = Offset(size.width, 0);
     canvas.drawLine(startOffset, endOffset, sliderPaint);
     canvas.drawLine(startOffset, endOffset, sliderHolePaint);
@@ -528,13 +562,18 @@ class SliderHeaderPainter extends CustomPainter {
 
   SliderHeaderPainter({this.tempreture});
 
+  final circleRadius = 16.0;
+
   @override
   void paint(Canvas canvas, Size size) {
     final progress = (size.width / 100) * tempreture;
-    final endOffset = Offset(progress, 0);
-    //final radius = min(4)
-    canvas.drawCircle(endOffset, 12, _progressHeaderCirclePaint);
-    canvas.drawCircle(endOffset, 6, _progressHeaderHolePaint);
+    // final center = Offset(size.width / 2, size.height / 2);
+
+    final endOffset = Offset(progress, size.height / 2);
+
+    final radius = min(size.width / 2, size.height / 2);
+    canvas.drawCircle(endOffset, radius, _progressHeaderCirclePaint);
+    canvas.drawCircle(endOffset, radius / 2, _progressHeaderHolePaint);
   }
 
   @override
