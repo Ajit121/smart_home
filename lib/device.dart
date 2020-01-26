@@ -8,11 +8,12 @@ import 'package:flutter_svg/svg.dart';
 import 'package:smart_home/data/Device.dart';
 import 'package:smart_home/theme/Colors.dart';
 import 'package:smart_home/theme/theme.dart';
-import 'package:smart_home/utils.dart';
+import 'package:smart_home/utils/utils.dart';
 import 'package:vector_math/vector_math.dart' show radians;
 import 'dart:math' as math;
 
 import 'RadialDragGestureDetector.dart';
+import 'utils/TempretureSlider.dart';
 
 class DevicePage extends StatelessWidget {
   final Device device;
@@ -145,6 +146,7 @@ class _ControllerWidgetState extends State<ControllerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Expanded(
       child: Container(
         child: Column(
@@ -186,16 +188,48 @@ class _ControllerWidgetState extends State<ControllerWidget> {
             ),
             Hero(
               tag: '${widget.device.deviceName}slider',
-              child: Container(
-                child: Stack(
-                  children: <Widget>[
-                    TempretureSlider(
-                        tempreture: _currentTempreture,
-                        onTempretureUpdate: onTempretureUpdate),
-                  ],
+              child: LayoutBuilder(
+                builder: (context, constraints) => Container(
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: <Widget>[
+                      Container(
+                        width: constraints.maxWidth-20,
+                        decoration: widgetDecoration,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      Material(
+                        color: Colors.transparent,
+                        child: SliderTheme(
+                          data: theme.sliderTheme.copyWith(
+                            overlayColor: accentColor.withOpacity(0.12),
+                            trackShape: MySliderTackShape(),
+                            thumbShape: SliderHeaderPainter(),
+                            valueIndicatorTextStyle: theme
+                                .accentTextTheme.bodyText1
+                                .copyWith(color: theme.colorScheme.onSurface),
+                          ),
+                          child: Slider(
+                            value: _currentTempreture.toDouble() / 100,
+                            semanticFormatterCallback: (double value) =>
+                                value.round().toString(),
+                            onChanged: (double value) {
+                              setState(
+                                () {
+                                  _currentTempreture = (value * 100).toInt();
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
+
+
           ],
         ),
       ),
@@ -376,7 +410,6 @@ class TempretureIndicator extends CustomPainter {
 
       final rotationAngle = 2 * pi / maxLines;
 
-
       canvas.drawLine(a1, b1, linePainter);
 
       canvas.rotate(rotationAngle);
@@ -547,6 +580,7 @@ class SliderPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
 
+/*
 class SliderHeaderPainter extends CustomPainter {
   final tempreture;
 
@@ -579,3 +613,4 @@ class SliderHeaderPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
+*/

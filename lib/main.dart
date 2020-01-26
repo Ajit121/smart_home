@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:smart_home/utils/SliderDemo.dart';
 import 'package:smart_home/data/Device.dart';
 import 'package:smart_home/device.dart';
 import 'package:smart_home/theme/Colors.dart';
@@ -239,13 +240,12 @@ class _PlacesWidgetState extends State<PlacesWidget> {
         child: ListView.builder(
           itemBuilder: (context, index) {
             return GestureDetector(
-              onTap: (){
+              onTap: () {
                 setState(() {
                   _placeList.forEach((place) {
                     place.isTurnedOn = false;
                   });
-                  _placeList[index].isTurnedOn =
-                  !_placeList[index].isTurnedOn;
+                  _placeList[index].isTurnedOn = !_placeList[index].isTurnedOn;
                 });
               },
               child: AnimatedContainer(
@@ -362,6 +362,7 @@ class _DivicesWidgetState extends State<DivicesWidget> {
                             DevicePage(
                           device: _deviceList[index],
                         ),
+                          // SliderDemo(),
                         transitionDuration: const Duration(milliseconds: 1000),
                         transitionsBuilder:
                             (context, animation, secondaryAnimation, child) {
