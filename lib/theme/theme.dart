@@ -34,5 +34,5 @@ BoxDecoration widgetSelectedDecoration = BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Colors.red, Colors.deepOrangeAccent],
+      colors: [Colors.deepOrange[900], Colors.deepOrange],
     ));

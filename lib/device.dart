@@ -1,24 +1,30 @@
-import 'dart:collection';
 import 'dart:math';
 
+import 'package:after_layout/after_layout.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:smart_home/data/Device.dart';
+import 'package:smart_home/data/SwitchData.dart';
 import 'package:smart_home/theme/Colors.dart';
 import 'package:smart_home/theme/theme.dart';
-import 'package:smart_home/utils/utils.dart';
-import 'package:vector_math/vector_math.dart' show radians;
-import 'dart:math' as math;
-
 import 'RadialDragGestureDetector.dart';
+import 'main.dart';
 import 'utils/TempretureSlider.dart';
 
-class DevicePage extends StatelessWidget {
+class DevicePage extends StatefulWidget {
   final Device device;
 
   const DevicePage({Key key, this.device}) : super(key: key);
+
+  @override
+  _DevicePageState createState() => _DevicePageState();
+}
+
+class _DevicePageState extends State<DevicePage>
+    with AfterLayoutMixin<DevicePage> {
+  bool isUiLoaded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,22 +34,43 @@ class DevicePage extends StatelessWidget {
         fit: StackFit.expand,
         children: <Widget>[
           Hero(
-            tag: '${device.deviceName}bg',
+            tag: '${widget.device.deviceName}bg',
             child: Container(
               decoration: widgetDecoration,
             ),
           ),
           SafeArea(
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.only(top: 20, bottom: 20),
               child: Column(
+                mainAxisSize: MainAxisSize.max,
                 children: <Widget>[
-                  new HeaderWidget(
-                    device: device,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20, right: 20),
+                    child: HeaderWidget(
+                      device: widget.device,
+                    ),
                   ),
-                  new ControllerWidget(
-                    device: device,
+                  SizedBox(
+                    height: 40,
                   ),
+                  Hero(
+                      tag: '${widget.device.deviceName}deviceList',
+                      child: DevicesWidget()),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 20, right: 20),
+                      child: new ControllerWidget(
+                        device: widget.device,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: Hero(
+                        tag: '${widget.device.deviceName}controls',
+                        child: new SwitchButtons()),
+                  )
                 ],
               ),
             ),
@@ -51,6 +78,135 @@ class DevicePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  @override
+  void afterFirstLayout(BuildContext context) {
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      setState(() {
+        isUiLoaded = true;
+      });
+    });
+  }
+}
+
+class DevicesWidget extends StatefulWidget {
+  const DevicesWidget({
+    Key key,
+  }) : super(key: key);
+
+  @override
+  _DevicesWidgetState createState() => _DevicesWidgetState();
+}
+
+class _DevicesWidgetState extends State<DevicesWidget> {
+  final List<Device> _deviceList = [
+    Device(
+        deviceIcon: ('assets/ac.svg'),
+        deviceName: 'Air conditionar',
+        deviceDescription: 'Panasonic CS-VX18VKS',
+        information: '29\u00BA C',
+        isTurnedOn: true),
+    Device(
+        deviceIcon: ('assets/smart_tv.svg'),
+        deviceName: 'Smart TV',
+        deviceDescription: 'Sony BRAVIA KLV-10234',
+        information: '29\u00BA C',
+        isTurnedOn: false),
+    Device(
+        deviceIcon: ('assets/light.svg'),
+        deviceName: 'Light Buld',
+        deviceDescription: 'Philips Hue White A19 4',
+        information: '29\u00BA C',
+        isTurnedOn: false),
+    Device(
+        deviceIcon: ('assets/router.svg'),
+        deviceName: 'Router',
+        deviceDescription: 'Asus RT-AC1200',
+        information: '29\u00BA C',
+        isTurnedOn: false),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(maxHeight: 70),
+        child: ListView.builder(
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _deviceList.forEach((place) {
+                    place.isTurnedOn = false;
+                  });
+                  _deviceList[index].isTurnedOn =
+                      !_deviceList[index].isTurnedOn;
+                });
+              },
+              child: AnimatedContainer(
+                duration: buttonAnimationDuration,
+                margin: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                decoration: _deviceList[index].isTurnedOn
+                    ? widgetSelectedDecoration
+                    : widgetDecoration,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: SvgPicture.asset(
+                        _deviceList[index].deviceIcon,
+                        height: 20,
+                        width: 20,
+                        color: subTitleTextColor,
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      mainAxisSize: MainAxisSize.max,
+                      children: <Widget>[
+                        Expanded(
+                          child: Row(
+                            children: <Widget>[
+                              Material(
+                                color: Colors.transparent,
+                                child: Text(
+                                  _deviceList[index].deviceName,
+                                  style: subTitleStyle,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Row(
+                            children: <Widget>[
+                              Material(
+                                color: Colors.transparent,
+                                child: Text(
+                                  _deviceList[index].deviceDescription,
+                                  style: subTitleStyle,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+          itemCount: _deviceList.length,
+          scrollDirection: Axis.horizontal,
+        ),
+      ),
+    );
+    ;
   }
 }
 
@@ -101,7 +257,7 @@ class HeaderWidget extends StatelessWidget {
         ),
         InkWell(
           onTap: () {
-            Navigator.of(context).pop();
+            //Navigator.of(context).pop();
           },
           child: Hero(
             tag: '${device.deviceIcon}2',
@@ -147,92 +303,101 @@ class _ControllerWidgetState extends State<ControllerWidget> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Hero(
-              tag: '${widget.device.deviceName}tempreture',
-              child: Material(
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.max,
+      children: <Widget>[
+        Hero(
+          tag: '${widget.device.deviceName}tempreture',
+          child: Material(
+            color: backgroundColor,
+            child: Container(
+              decoration: BoxDecoration(
                 color: backgroundColor,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: backgroundColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: Darker,
-                          offset: Offset(_offset, _offset),
-                          blurRadius: _blurRadius,
-                          spreadRadius: _spreadRadius),
-                      BoxShadow(
-                          color: backgroundColor,
-                          offset: Offset(-_offset, -_offset),
-                          blurRadius: _blurRadius,
-                          spreadRadius: _spreadRadius),
-                    ],
-                  ),
-                  child: TempretureDial(
-                    tempreture: _currentTempreture.toInt(),
-                    onTempretureUpdate: onTempretureUpdate,
-                  ),
-                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                      color: Darker,
+                      offset: Offset(_offset, _offset),
+                      blurRadius: _blurRadius,
+                      spreadRadius: _spreadRadius),
+                  BoxShadow(
+                      color: backgroundColor,
+                      offset: Offset(-_offset, -_offset),
+                      blurRadius: _blurRadius,
+                      spreadRadius: _spreadRadius),
+                ],
+              ),
+              child: TempretureDial(
+                tempreture: _currentTempreture.toInt(),
+                onTempretureUpdate: onTempretureUpdate,
               ),
             ),
-            SizedBox(
-              height: 40,
-            ),
-            SizedBox(
-              height: 40,
-            ),
-            Hero(
-              tag: '${widget.device.deviceName}slider',
-              child: LayoutBuilder(
-                builder: (context, constraints) => Container(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: <Widget>[
-                      Container(
-                        width: constraints.maxWidth-20,
-                        decoration: widgetDecoration,
-                        padding: const EdgeInsets.all(12),
-                      ),
-                      Material(
-                        color: Colors.transparent,
-                        child: SliderTheme(
-                          data: theme.sliderTheme.copyWith(
-                            overlayColor: accentColor.withOpacity(0.12),
-                            trackShape: MySliderTackShape(),
-                            thumbShape: SliderHeaderPainter(),
-                            valueIndicatorTextStyle: theme
-                                .accentTextTheme.bodyText1
-                                .copyWith(color: theme.colorScheme.onSurface),
-                          ),
-                          child: Slider(
-                            value: _currentTempreture.toDouble() / 100,
-                            semanticFormatterCallback: (double value) =>
-                                value.round().toString(),
-                            onChanged: (double value) {
-                              setState(
-                                () {
-                                  _currentTempreture = (value * 100).toInt();
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-
-          ],
+          ),
         ),
-      ),
+        SizedBox(
+          height: 40,
+        ),
+        Hero(
+          tag: '${widget.device.deviceName}textMessage',
+          child: Container(width: double.infinity,
+            child: Align(
+              alignment: Alignment.center,
+              child: Material(
+                color: Colors.transparent,
+                child: Text(
+                  'Set Tempreture',
+                  style: titleStyle,
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 30,
+        ),
+        Hero(
+          tag: '${widget.device.deviceName}slider',
+          child: LayoutBuilder(
+            builder: (context, constraints) => Container(
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  Container(
+                    width: constraints.maxWidth - 20,
+                    decoration: widgetDecoration,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: SliderTheme(
+                      data: theme.sliderTheme.copyWith(
+                        overlayColor: accentColor.withOpacity(0.12),
+                        trackShape: MySliderTackShape(),
+                        thumbShape: SliderHeaderPainter(),
+                        valueIndicatorTextStyle: theme.accentTextTheme.bodyText1
+                            .copyWith(color: theme.colorScheme.onSurface),
+                      ),
+                      child: Slider(
+                        value: _currentTempreture.toDouble() / 100,
+                        semanticFormatterCallback: (double value) =>
+                            value.round().toString(),
+                        onChanged: (double value) {
+                          setState(
+                            () {
+                              _currentTempreture = (value * 100).toInt();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -275,6 +440,8 @@ class _TempretureDialState extends State<TempretureDial> {
         _startDragPercent = _currentTempreture / 101;
       },
       child: Container(
+        height: 180,
+        width: 180,
         child: CustomPaint(
           foregroundPainter: TempretureIndicator(tempreture: widget.tempreture),
           child: Container(
@@ -288,28 +455,34 @@ class _TempretureDialState extends State<TempretureDial> {
                     TempretureProgressBar(tempreture: widget.tempreture),
                 child: Container(
                   margin: const EdgeInsets.all(28),
-                  child: ListView(
-                    physics: NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    children: <Widget>[
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          '${widget.tempreture.toInt()}\u00B0 C',
-                          style: TextStyle(fontSize: 28, color: accentColor),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: ListView(
+                      physics: NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      children: <Widget>[
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${widget.tempreture.toInt()}\u00B0 C',
+                            style: TextStyle(
+                                fontSize: 28,
+                                color: accentColor,
+                                fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          'Cool mood',
-                          style: TextStyle(fontSize: 14, color: accentColor),
+                        SizedBox(
+                          height: 10,
                         ),
-                      )
-                    ],
+                        Align(
+                          alignment: Alignment.center,
+                          child: Text(
+                            'Cool mood',
+                            style: TextStyle(fontSize: 16, color: accentColor),
+                          ),
+                        )
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -395,7 +568,7 @@ class TempretureIndicator extends CustomPainter {
 
     Paint indicatorPaint = Paint()
       ..strokeWidth = circleWidth
-      ..color = Brighter
+      ..color = backgroundColor
       ..style = PaintingStyle.stroke;
 
     canvas.drawCircle(center, radius, indicatorPaint);
@@ -580,37 +753,91 @@ class SliderPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
 
-/*
-class SliderHeaderPainter extends CustomPainter {
-  final tempreture;
-
-  final _progressHeaderCirclePaint = Paint()
-    ..strokeWidth = 8
-    ..color = accentColor
-    ..style = PaintingStyle.fill;
-
-  final _progressHeaderHolePaint = Paint()
-    ..strokeWidth = 4
-    ..color = backgroundColor
-    ..style = PaintingStyle.fill;
-
-  SliderHeaderPainter({this.tempreture});
-
-  final circleRadius = 16.0;
-
+class SwitchButtons extends StatefulWidget {
   @override
-  void paint(Canvas canvas, Size size) {
-    final progress = (size.width / 100) * tempreture;
-    // final center = Offset(size.width / 2, size.height / 2);
-
-    final endOffset = Offset(progress, size.height / 2);
-
-    final radius = min(size.width / 2, size.height / 2);
-    canvas.drawCircle(endOffset, radius, _progressHeaderCirclePaint);
-    canvas.drawCircle(endOffset, radius / 2, _progressHeaderHolePaint);
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) => true;
+  _SwitchButtonsState createState() => _SwitchButtonsState();
 }
-*/
+
+class _SwitchButtonsState extends State<SwitchButtons> {
+  final switches = [
+    SwitchData(iconName: 'assets/sun.svg', isActive: false),
+    SwitchData(iconName: 'assets/aircon.svg', isActive: true),
+    SwitchData(iconName: 'assets/fan.svg', isActive: false),
+    SwitchData(iconName: 'assets/idea.svg', isActive: false),
+    SwitchData(iconName: 'assets/power.svg', isActive: false),
+    SwitchData(iconName: 'assets/moon.svg', isActive: false),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.all(30),
+            child: SvgPicture.asset(
+              'assets/switch.svg',
+              width: 80,
+              height: 80,
+              color: accentColor,
+            ),
+            decoration: widgetDecoration,
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Align(
+            alignment: Alignment.center,
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  childAspectRatio: 1.1,
+                  crossAxisCount: 3,
+                  mainAxisSpacing: 10,
+                ),
+                itemBuilder: (context, index) {
+                  return Align(
+                    alignment: Alignment.center,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          print('tapped');
+                          setState(() {
+                            switches.forEach((element) {
+                              element.isActive = false;
+                            });
+                            switches[index].isActive = !switches[index].isActive;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: buttonAnimationDuration,
+                          padding: const EdgeInsets.all(18),
+                          decoration: switches[index].isActive
+                              ? widgetSelectedDecoration
+                              : widgetDecoration,
+                          child: SvgPicture.asset(
+                            switches[index].iconName,
+                            width: 20,
+                            height: 20,
+                            color: subTitleTextColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                itemCount: switches.length,
+              ),
+            ),
+          ),
+        )
+      ],
+    );
+  }
+}

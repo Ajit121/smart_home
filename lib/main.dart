@@ -10,6 +10,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'data/Place.dart';
 
+const Duration buttonAnimationDuration = Duration(milliseconds: 200);
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
@@ -148,7 +150,8 @@ class _InfoWidgetState extends State<InfoWidget> {
                             style:
                                 TextStyle(fontSize: 12, color: tempIconColor),
                           ),
-                        )
+                        ),
+
                       ],
                     ),
                   )
@@ -249,9 +252,9 @@ class _PlacesWidgetState extends State<PlacesWidget> {
                 });
               },
               child: AnimatedContainer(
-                duration: Duration(milliseconds: 200),
+                duration: buttonAnimationDuration,
                 margin: const EdgeInsets.all(10),
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.fromLTRB(20,10,20,10),
                 decoration: _placeList[index].isTurnedOn
                     ? widgetSelectedDecoration
                     : widgetDecoration,
@@ -277,7 +280,7 @@ class _PlacesWidgetState extends State<PlacesWidget> {
                           style: subTitleStyle,
                         ),
                         Text(
-                          _placeList[index].devices.toString(),
+                          '${_placeList[index].devices.toString()} devices',
                           style: subTitleStyle,
                         )
                       ],
@@ -329,7 +332,7 @@ class _DivicesWidgetState extends State<DivicesWidget> {
         deviceName: 'Router',
         deviceDescription: 'Asus RT-AC1200',
         information: '29\u00BA C',
-        isTurnedOn: true),
+        isTurnedOn: false),
   ];
 
   @override
@@ -405,6 +408,7 @@ class _DivicesWidgetState extends State<DivicesWidget> {
                           ),
                         ),
                       ),
+                      Hero(tag:'${_deviceList[index].deviceName}deviceList',child: Container(),),
                       Text(
                         _deviceList[index].deviceDescription,
                         style: subTitleStyle,
@@ -423,6 +427,7 @@ class _DivicesWidgetState extends State<DivicesWidget> {
                               ),
                             ),
                           ),
+                          Hero(tag: '${_deviceList[index].deviceName}textMessage',child: Container(),),
                           Transform.scale(
                             scale: .7,
                             child: Hero(
@@ -440,7 +445,8 @@ class _DivicesWidgetState extends State<DivicesWidget> {
                             ),
                           )
                         ],
-                      )
+                      ),
+                      Hero(tag:'${_deviceList[index].deviceName}controls' ,child: Container()),
                     ],
                   ),
                 ),

@@ -8,13 +8,13 @@ class MySliderTackShape extends SliderTrackShape {
     ..color = accentColor
     ..style = PaintingStyle.fill
     ..strokeCap = StrokeCap.round
-    ..strokeWidth = 10;
+    ..strokeWidth = 8;
 
   final sliderHolePaint = Paint()
     ..color = LightBrighter
     ..style = PaintingStyle.fill
     ..strokeCap = StrokeCap.round
-    ..strokeWidth = 10;
+    ..strokeWidth = 8;
 
   @override
   void paint(PaintingContext context, Offset offset,
@@ -88,18 +88,18 @@ class SliderHeaderPainter extends SliderComponentShape {
   final tempreture;
 
   final _progressHeaderCirclePaint = Paint()
-    ..strokeWidth = 8
+    ..strokeWidth = 6
     ..color = accentColor
     ..style = PaintingStyle.fill;
 
   final _progressHeaderHolePaint = Paint()
-    ..strokeWidth = 4
+    ..strokeWidth = 3
     ..color = backgroundColor
     ..style = PaintingStyle.fill;
 
   SliderHeaderPainter({this.tempreture});
 
-  final circleRadius = 16.0;
+  final circleRadius = 12.0;
 
   @override
   void paint(PaintingContext context, Offset thumbCenter,
@@ -113,7 +113,7 @@ class SliderHeaderPainter extends SliderComponentShape {
         double value}) {
     final Canvas canvas = context.canvas;
 
-    var size = 16.0;
+    var size = 12.0;
 
     canvas.drawCircle(thumbCenter, size, _progressHeaderCirclePaint);
     canvas.drawCircle(thumbCenter, size / 2, _progressHeaderHolePaint);
