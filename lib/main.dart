@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:smart_home/utils/SliderDemo.dart';
 import 'package:smart_home/data/Device.dart';
 import 'package:smart_home/device.dart';
 import 'package:smart_home/theme/Colors.dart';
